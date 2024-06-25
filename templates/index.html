@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pencil Sketch Converter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #343a40; /* Black skin */
+            color: #fff; /* White text */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            position: relative; /* Ensure position context for absolute positioning */
+        }
+        h1 {
+            color: #007bff; /* Blue */
+            margin-bottom: 20px;
+        }
+        #upload-container {
+            background: #212529; /* Dark background */
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            width: 80%;
+            max-width: 600px;
+        }
+        #fileInput {
+            display: none;
+        }
+        #upload-label {
+            background-color: #007bff;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+            display: inline-block;
+        }
+        #upload-label:hover {
+            background-color: #0056b3;
+        }
+        #sketch-container {
+            margin-top: 20px;
+            width: 100%;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+        }
+        #before-img, #after-img {
+            max-width: 45%;
+            margin-bottom: 10px;
+            display: none;
+        }
+        #download-btn, #back-btn {
+            background-color: #0056b3; /* Red */
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+            text-decoration: none;
+            display: none;
+        }
+        #download-btn:hover, #back-btn:hover {
+            background-color: #0056b3;
+        }
+        .signature {
+            position: absolute;
+            bottom: 20px; /* Adjust as needed */
+            right: 20px; /* Adjust as needed */
+            font-family: 'Great Vibes', cursive; /* Example of a signature-like font */
+            font-size: 24px;
+            color: ghostwhite;
+            
+        }
+    </style>
+</head>
+<body>
+    <h1>Pencil Sketch Converter</h1>
+    <div id="upload-container">
+        <input type="file" id="fileInput" accept="image/*" onchange="handleFileSelect(event)">
+        <label for="fileInput" id="upload-label">Choose an Image</label>
+        <p id="file-name" style="margin-top: 10px;"></p>
+    </div>
+    <div id="sketch-container">
+        <img id="before-img" alt="Before Conversion" />
+        <img id="after-img" alt="After Conversion" />
+    </div>
+    <div>
+        <a id="back-btn" href="#" onclick="goBack()">Back to Upload</a>
+        <a id="download-btn" href="#" download="sketch.jpg">Download Sketch</a>
+    </div>
+    <div class="signature">By: Zaynab Zya</div>
+    <script>
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                return;
+            }
+            document.getElementById('file-name').textContent = `Selected File: ${file.name}`;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            fetch('http://localhost:5000/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Upload failed');
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                const beforeImg = document.getElementById('before-img');
+                const afterImg = document.getElementById('after-img');
+                const downloadBtn = document.getElementById('download-btn');
+                const backBtn = document.getElementById('back-btn');
+
+                beforeImg.src = URL.createObjectURL(file);
+                beforeImg.style.display = 'block';
+
+                // Simulating conversion completion
+                setTimeout(() => {
+                    afterImg.src = URL.createObjectURL(blob);
+                    afterImg.style.display = 'block';
+                    downloadBtn.style.display = 'inline-block';
+                    backBtn.style.display = 'inline-block'; // Show back button after conversion
+                    document.getElementById('upload-container').style.display = 'none'; // Hide upload container after conversion
+                }, 2000); // Adjust timing as per actual conversion process
+
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Upload failed');
+            });
+        }
+
+        function goBack() {
+            document.getElementById('upload-container').style.display = 'block';
+            document.getElementById('before-img').style.display = 'none';
+            document.getElementById('after-img').style.display = 'none';
+            document.getElementById('download-btn').style.display = 'none';
+            document.getElementById('back-btn').style.display = 'none';
+            document.getElementById('fileInput').value = ''; // Clear file input value
+        }
+
+        document.getElementById('download-btn').addEventListener('click', () => {
+            const afterImg = document.getElementById('after-img');
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = afterImg.naturalWidth;
+            canvas.height = afterImg.naturalHeight;
+            ctx.drawImage(afterImg, 0, 0);
+
+            // Convert canvas to blob and download
+            canvas.toBlob(blob => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'sketch.jpg';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }, 'image/jpeg');
+        });
+    </script>
+</body>
+</html>
